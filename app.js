@@ -12,7 +12,14 @@ const searchMarketCode = require('./src/searchMarketCode');
 const cors = require('cors')
 
 app.set('port', process.env.PORT || 3000);
+
 app.use(cors());
+
+app.get('/searchMarketCode', (req, res) => {
+    searchMarketCode.then(data => {
+        res.send(data);
+    })
+})
 
 process.on('uncaughtException', (err) => {
     console.log(`uncaughtException occur! : ${err}`);
@@ -25,12 +32,19 @@ app.on('close', () => {
 
 let userCount = 0;
 
+let ws;
+
 io.on('connection', (socket) => {
     console.log('user connect');
+    if (userCount === 0) {
+        ws = new WebSocket("wss://api.upbit.com/websocket/v1");
+        ws.onopen = () => {
+            console.log('api socket open');
+            console.log(`socket status : ${ws.readyState}`);
+        }
+    }
     userCount += 1;
-    console.log(userCount);
-
-    const ws = new WebSocket("wss://api.upbit.com/websocket/v1");
+    console.log(`current user : ${userCount}`);
 
     ws.on('open', () => {
         searchMarketCode.then(data => {
@@ -40,9 +54,12 @@ io.on('connection', (socket) => {
 
     ws.on('message', (data) => {
         try {
-            let str = data.toString('utf-8');
-            let json = JSON.parse(str);
-            socket.send(JSON.stringify(json));
+            let json = JSON.parse(data);
+            let sendData = {
+                code: json.code,
+                price: json.trade_price
+            };
+            socket.send(JSON.stringify(sendData));
         } catch (e) {
             console.error(e);
         }
@@ -54,12 +71,11 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', (reason) => {
         userCount -= 1;
-        if (userCount <= 0) {
+        if (userCount === 0) {
             ws.close();
-            console.log(ws);
         }
         console.log(reason);
-        console.log(userCount);
+        console.log(`current user : ${userCount}`);
     })
 });
 
