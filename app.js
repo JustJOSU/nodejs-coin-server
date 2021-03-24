@@ -9,15 +9,30 @@ const io = require('socket.io')(http, {
 const WebSocket = require('ws');
 const searchMarketCode = require('./src/searchMarketCode');
 
-const cors = require('cors')
+const cors = require('cors');
+const { response } = require('express');
+const { default: axios } = require('axios');
 
 app.set('port', process.env.PORT || 3000);
 
 app.use(cors());
 
 app.get('/searchMarketCode', (req, res) => {
-    searchMarketCode.then(data => {
-        res.send(data);
+    const code = async () => {
+        const response = await axios.get('https://api.upbit.com/v1/market/all', { params: { isDetail: 'ture' } });
+        const data = response.data;
+        const krwList = data.map(value => {
+            let temp = value.market;
+            if (temp.indexOf('KRW') !== -1) {
+                return temp.split('-')[1];
+            } else {
+                return 0;
+            }
+        }).filter(value => value !== 0)
+        return krwList;
+    }
+    code().then(data => {
+        res.send(data)
     })
 })
 
@@ -56,7 +71,7 @@ io.on('connection', (socket) => {
         try {
             let json = JSON.parse(data);
             let sendData = {
-                code: json.code,
+                code: json.code.split('-')[1],
                 price: json.trade_price
             };
             socket.send(JSON.stringify(sendData));
