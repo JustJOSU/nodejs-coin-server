@@ -10,15 +10,14 @@ const WebSocket = require('ws');
 const searchMarketCode = require('./src/searchMarketCode');
 
 const cors = require('cors');
-const { response } = require('express');
-const { default: axios } = require('axios');
+const axios = require('axios');
 
 app.set('port', process.env.PORT || 3000);
 
 app.use(cors());
 
 app.get('/searchMarketCode', (req, res) => {
-    const code = async () => {
+    async function fetchData() {
         const response = await axios.get('https://api.upbit.com/v1/market/all', { params: { isDetail: 'ture' } });
         const data = response.data;
         const krwList = data.map(value => {
@@ -29,11 +28,9 @@ app.get('/searchMarketCode', (req, res) => {
                 return 0;
             }
         }).filter(value => value !== 0)
-        return krwList;
+        res.send(krwList);
     }
-    code().then(data => {
-        res.send(data)
-    })
+    fetchData();
 })
 
 process.on('uncaughtException', (err) => {
