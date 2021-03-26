@@ -10,8 +10,7 @@ const WebSocket = require('ws');
 const searchMarketCode = require('./src/searchMarketCode');
 
 const cors = require('cors');
-const { response } = require('express');
-const { default: axios } = require('axios');
+const axios = require('axios');
 
 app.set('port', process.env.PORT || 3000);
 
