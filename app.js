@@ -17,24 +17,24 @@ app.set('port', process.env.PORT || 3000);
 
 app.use(cors());
 
-app.get('/searchMarketCode', (req, res) => {
-    const code = async () => {
-        const response = await axios.get('https://api.upbit.com/v1/market/all', { params: { isDetail: 'ture' } });
-        const data = response.data;
-        const krwList = data.map(value => {
-            let temp = value.market;
-            if (temp.indexOf('KRW') !== -1) {
-                return temp.split('-')[1];
-            } else {
-                return 0;
-            }
-        }).filter(value => value !== 0)
-        return krwList;
-    }
-    code().then(data => {
-        res.send(data)
-    })
-})
+// app.get('/searchMarketCode', (req, res) => {
+//     const code = async () => {
+//         const response = await axios.get('https://api.upbit.com/v1/market/all', { params: { isDetail: 'ture' } });
+//         const data = response.data;
+//         const krwList = data.map(value => {
+//             let temp = value.market;
+//             if (temp.indexOf('KRW') !== -1) {
+//                 return temp.split('-')[1];
+//             } else {
+//                 return 0;
+//             }
+//         }).filter(value => value !== 0)
+//         return krwList;
+//     }
+//     code().then(data => {
+//         res.send(data)
+//     })
+// })
 
 process.on('uncaughtException', (err) => {
     console.log(`uncaughtException occur! : ${err}`);
@@ -48,6 +48,7 @@ app.on('close', () => {
 let userCount = 0;
 
 let ws;
+let count = 0;
 
 io.on('connection', (socket) => {
     console.log('user connect');
@@ -61,20 +62,28 @@ io.on('connection', (socket) => {
     userCount += 1;
     console.log(`current user : ${userCount}`);
 
-    ws.on('open', () => {
-        searchMarketCode.then(data => {
-            ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${data}]}]`)
-        })
+    ws.on('open', async () => {
+        count += 1;
+        const market = await searchMarketCode('krw');
+        const temp = []
+        for (let i = 0; i < market.length; i++) {
+            temp.push(`"${market[i]}"`)
+        }
+        ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${temp}]}]`)
+        // searchMarketCode.then(data => {
+        //     ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${data}]}]`)
+        // })
     })
 
     ws.on('message', (data) => {
         try {
             let json = JSON.parse(data);
-            let sendData = {
-                code: json.code.split('-')[1],
-                price: json.trade_price
-            };
-            socket.send(JSON.stringify(sendData));
+            console.log(json);
+            // let sendData = {
+            //     code: json.code.split('-')[1],
+            //     price: json.trade_price
+            // };
+            // socket.send(JSON.stringify(sendData));
         } catch (e) {
             console.error(e);
         }
