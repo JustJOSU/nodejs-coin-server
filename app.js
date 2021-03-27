@@ -1,5 +1,6 @@
 const app = require('express')();
 const http = require('http').Server(app);
+const router = require('./routes');
 
 const WebSocket = require('ws');
 const io = require('socket.io')(http, {
@@ -17,14 +18,11 @@ app.use(cors());
 
 app.set('port', process.env.PORT || 3000);
 
+app.use('/', router);
+
 process.on('uncaughtException', (err) => {
     console.log(`uncaughtException occur! : ${err}`);
     console.log(err.stack);
-})
-
-app.get('/searchMarketCode', async (req, res) => {
-    const markets = await SMC.getMarket();
-    res.send(markets)
 })
 
 app.on('close', () => {
@@ -55,12 +53,10 @@ io.on('connection', (socket) => {
     ws.on('message', (data) => {
         try {
             let json = JSON.parse(data);
-            console.log(json);
-            // let sendData = {
-            //     code: json.code.split('-')[1],
-            //     price: json.trade_price
-            // };
-            // socket.send(JSON.stringify(sendData));
+            let sendData = {
+                [json.code]: json.trade_price
+            };
+            socket.send(JSON.stringify(sendData));
         } catch (e) {
             console.error(e);
         }

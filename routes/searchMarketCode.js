@@ -11,20 +11,9 @@ async function getData() {
 
 async function getMarket() {
     const markets = await getData();
-    const codes = {
-        'krw': [],
-        'btc': [],
-        'usdt': [],
-    }
+    const codes = {}
     for (const element of markets) {
-        let temp = element[0]
-        if (temp == 'B') {
-            codes.btc.push(element);
-        } else if (temp == 'K') {
-            codes.krw.push(element);
-        } else {
-            codes.usdt.push(element)
-        }
+        codes[element + ''] = 0
     }
 
     return codes;
