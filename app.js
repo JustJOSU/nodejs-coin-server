@@ -1,43 +1,30 @@
 const app = require('express')();
 const http = require('http').Server(app);
+
+const WebSocket = require('ws');
 const io = require('socket.io')(http, {
     pingInterval: 10000,
     pingTimeout: 5000,
     cookie: false
 });
 
-const WebSocket = require('ws');
-const searchMarketCode = require('./src/searchMarketCode');
+const SMC = require('./src/searchMarketCode');
 
 const cors = require('cors');
 const axios = require('axios');
 
-app.set('port', process.env.PORT || 3000);
-
 app.use(cors());
 
-// app.get('/searchMarketCode', (req, res) => {
-//     const code = async () => {
-//         const response = await axios.get('https://api.upbit.com/v1/market/all', { params: { isDetail: 'ture' } });
-//         const data = response.data;
-//         const krwList = data.map(value => {
-//             let temp = value.market;
-//             if (temp.indexOf('KRW') !== -1) {
-//                 return temp.split('-')[1];
-//             } else {
-//                 return 0;
-//             }
-//         }).filter(value => value !== 0)
-//         return krwList;
-//     }
-//     code().then(data => {
-//         res.send(data)
-//     })
-// })
+app.set('port', process.env.PORT || 3000);
 
 process.on('uncaughtException', (err) => {
     console.log(`uncaughtException occur! : ${err}`);
     console.log(err.stack);
+})
+
+app.get('/searchMarketCode', async (req, res) => {
+    const markets = await SMC.getMarket();
+    res.send(markets)
 })
 
 app.on('close', () => {
@@ -47,7 +34,6 @@ app.on('close', () => {
 let userCount = 0;
 
 let ws;
-let count = 0;
 
 io.on('connection', (socket) => {
     console.log('user connect');
@@ -62,16 +48,8 @@ io.on('connection', (socket) => {
     console.log(`current user : ${userCount}`);
 
     ws.on('open', async () => {
-        count += 1;
-        const market = await searchMarketCode('krw');
-        const temp = []
-        for (let i = 0; i < market.length; i++) {
-            temp.push(`"${market[i]}"`)
-        }
-        ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${temp}]}]`)
-        // searchMarketCode.then(data => {
-        //     ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${data}]}]`)
-        // })
+        const params = await SMC.getRequestCodes();
+        ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${params}]}]`)
     })
 
     ws.on('message', (data) => {
