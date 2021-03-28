@@ -9,7 +9,7 @@ const io = require('socket.io')(http, {
     cookie: false
 });
 
-const SMC = require('./src/searchMarketCode');
+const SMC = require('./routes/searchMarketCode');
 
 const cors = require('cors');
 const axios = require('axios');
@@ -54,9 +54,10 @@ io.on('connection', (socket) => {
         try {
             let json = JSON.parse(data);
             let sendData = {
-                [json.code]: json.trade_price
+                'code': json.code,
+                'price': json.trade_price
             };
-            socket.send(JSON.stringify(sendData));
+            socket.send(sendData);
         } catch (e) {
             console.error(e);
         }

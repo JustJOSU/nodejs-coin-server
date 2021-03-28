@@ -11,11 +11,15 @@ async function getData() {
 
 async function getMarket() {
     const markets = await getData();
-    const codes = {}
+    const codes = []
     for (const element of markets) {
-        codes[element + ''] = 0
+        let temp = {
+            'code': element,
+            'price': 0
+        };
+        codes.push(temp);
     }
-
+    console.log(codes);
     return codes;
 }
 
