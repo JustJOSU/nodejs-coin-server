@@ -4,7 +4,7 @@ const url = 'https://api.upbit.com/v1/market/all';
 async function getData() {
     const data = (await axios.get(url, { params: { isDetail: 'true' } })).data;
     const markets = await Promise.all(
-        data.map(value => value.market)
+        data.map(value => value.market).filter(value => value[0] == 'K')
     )
     return markets;
 }

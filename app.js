@@ -47,6 +47,7 @@ io.on('connection', (socket) => {
 
     ws.on('open', async () => {
         const params = await SMC.getRequestCodes();
+        console.log(params);
         ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${params}]}]`)
     })
 
@@ -57,6 +58,7 @@ io.on('connection', (socket) => {
                 'code': json.code,
                 'price': json.trade_price
             };
+            console.log(sendData);
             socket.send(sendData);
         } catch (e) {
             console.error(e);
