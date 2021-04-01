@@ -14,6 +14,35 @@ const SMC = require('./routes/searchMarketCode');
 const cors = require('cors');
 const axios = require('axios');
 
+// mongoDB default setting
+const MongoClient = require('mongodb').MongoClient;
+const mongoose = require('mongoose');
+const assert = require('assert');
+const { futimesSync } = require('fs');
+
+const url = 'mongodb://localhost:27017';
+const dbName = 'local';
+const CoinSchema = new mongoose.Schema({
+    code: String,
+    price: Number
+});
+const CoinModel = mongoose.model('Coin', CoinSchema);
+
+function connectDB() {
+    console.log('Attempting to connect db...')
+    mongoose.Promise = global.Promise;
+    mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
+    database = mongoose.connection;
+
+    database.on("error", console.error.bind(console, 'mongoose connection error.'));
+    database.on("open", () => {
+        console.log("DB Connected!!!");
+
+    });
+
+}
+// mongoDB end
+
 app.use(cors());
 
 app.set('port', process.env.PORT || 3000);
@@ -48,7 +77,7 @@ io.on('connection', (socket) => {
     ws.on('open', async () => {
         const params = await SMC.getRequestCodes();
         console.log(params);
-        ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${params}]}]`)
+        ws.send(`[{"ticket":"test"},{"type":"ticker","codes":[${params}],"isOnlyRealtime":true}]`)
     })
 
     ws.on('message', (data) => {
@@ -58,8 +87,14 @@ io.on('connection', (socket) => {
                 'code': json.code,
                 'price': json.trade_price
             };
-            console.log(sendData);
-            socket.send(sendData);
+            let buf = Buffer.from(JSON.stringify(sendData));
+            let arrayBuf = new ArrayBuffer(buf.length);
+            let view = new Uint8Array(arrayBuf);
+            for (let i = 0; i < buf.length; ++i) {
+                view[i] = buf[i];
+            }
+            console.log(arrayBuf);
+            socket.send(arrayBuf);
         } catch (e) {
             console.error(e);
         }
